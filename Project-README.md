@@ -1,6 +1,6 @@
 # CIS 3339 Data Platform Project
 
-## Project synopsis
+## Project synopsis - Also Aaron was here.
 
 Your team is taking ownership of an existing full-stack web application and improving it: understanding it, refactoring it, securing it, extending it, testing it, and getting it ready to deploy. Build on the codebase you're given. Don't start over with something new.
 
