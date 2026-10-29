@@ -8,7 +8,7 @@ The current iteration is based on development done by:
 
 ## Requirements
 
-This project uses NodeJS, VUEJS and MongoDB.
+This project uses NodeJS, VUEJS and MongoDB. Aaron was here uwu 
 
 ## Backend Node Application
 ```
