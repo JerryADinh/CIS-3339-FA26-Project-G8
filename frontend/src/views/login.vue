@@ -31,22 +31,18 @@
     </div>
 </template>
 
-<script>
-  import { useLoggedInUserStore } from "../store/loggedInUser";
+// Options API to Composition API 
 
-  export default {
-    data() {
-      return {
-        username: "",
-        password: "",
-      }
-    },
-    setup() {
-      const store = useLoggedInUserStore();
-      return {
-        store
-      }
-    }
-  }
+<script setup>
+import { ref } from 'vue';
+import { useLoggedInUserStore } from '../store/loggedInUser';
+
+// Migration: ref() replaces the input state previously declared in data().
+const username = ref('');
+const password = ref('');
+
+// Migration: script setup exposes this store directly to the template,
+// replacing the old setup() function and its return object.
+const store = useLoggedInUserStore();
 </script>
 
