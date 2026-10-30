@@ -16,6 +16,11 @@ function setAuthHeader(token) {
   apiClient.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 }
 
+ // Restore the Authorization header using a saved JWT.
+export function restoreAuthHeader(token) {
+  setAuthHeader(token);
+}
+
 // When user logs out, this function removes the Authorization header from apiClient
 function removeAuthHeader() {
   delete apiClient.defaults.headers.common["Authorization"];
