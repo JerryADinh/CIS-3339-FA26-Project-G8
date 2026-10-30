@@ -73,62 +73,58 @@
                 </div>
             </form>
         </div>
-    </main>
+    </main> 
 </template>
 
-<script>
-// import vuelidate validations
+
+<script setup>
+import { reactive } from 'vue'
+import { useRouter } from 'vue-router'
 import useVuelidate from '@vuelidate/core'
 import { required } from '@vuelidate/validators'
 import { createService } from '../api/api'
 import { useToast } from 'vue-toastification'
 
-//Notifications
 const toast = useToast()
 
-export default {
-    data() {
-        return {
-            //variable to hold new service information
-            service: {
-                name: null,
-                description: null,
-                status: "Active",
-            },
-        }
-    },
-    setup() {
-        // Register Vuelidate
-        const v$ = useVuelidate();
-        return { v$ };
-    },
-    validations() {
-        // validations for service
-        return {
-            service: {
-                name: { required },
-            }
-        }
-    },
-    methods: {
-        // method called when user attempts to create new service
-        async handleSubmitForm() {
-            // Trigger validation
-            this.v$.$validate();
+// Migration: useRouter() replaces this.$router.
+const router = useRouter()
 
-            if (this.v$.$error) {
-                // Form is invalid, do not proceed
-                return;
-            }
+// Migration: reactive() replaces the service object previously in data().
+const service = reactive({
+    name: null,
+    description: null,
+    status: 'Active'
+})
 
-            try {
-                const response = await createService(this.service);
-                toast.success(response)
-                this.$router.push('/findservice')
-            } catch (error) {
-                toast.error('Error creating new service:', error)
-            }
-        },
+// Migration: explicitly pass validation rules and state to Vuelidate.
+// Keep the service nesting so existing template expressions still work.
+const rules = {
+    service: {
+        name: { required }
+    }
+}
+
+const v$ = useVuelidate(rules, { service })
+
+// Migration: a top-level function replaces the methods entry.
+// State is accessed directly instead of through this.
+async function handleSubmitForm() {
+    const isValid = await v$.value.$validate()
+
+    if (!isValid) {
+        return
+    }
+
+    try {
+        const response = await createService(service)
+        toast.success(response)
+        router.push('/findservice')
+    } catch (error) {
+        const message = typeof error === 'string'
+            ? error
+            : error?.message || 'Error creating new service'
+        toast.error(message)
     }
 }
 </script>
