@@ -1,7 +1,8 @@
+
 import { ref } from 'vue';
 
-// reusable composable for managing API requests
-export function useAPI(apiCall, initialData = null) {
+// Reusable composable for managing API requests
+export function useApi(apiCall, initialData = null) {
 
     const data = ref(initialData);
     const loading = ref(false);
@@ -16,8 +17,13 @@ export function useAPI(apiCall, initialData = null) {
             data.value = response;
             return response;
         } catch (err) {
-            error.value = err;
-            throw err;
+            // Store the error so components can display it
+            error.value = err instanceof Error
+                ? err
+                : new Error(String(err));
+
+            // Prevent unhandled promise rejection
+            return null;
         } finally {
             loading.value = false;
         }

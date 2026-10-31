@@ -49,10 +49,7 @@ if (status === 401) {
 
   if (!isLoginRequest) {
     logoutUser();
-
-    if (window.location.pathname !== "/login") {
-      window.location.replace("/login");
-    }
+    window.location.replace("/login");
   }
 
   return Promise.reject(

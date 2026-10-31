@@ -67,7 +67,30 @@
         <h3 class="italic">Click table row to view client details</h3>
       </div>
       <div class="flex flex-col col-span-2">
-        <data-table :rows="clients" :columns="tableColumns" @row-click="openClient" />
+
+        <!-- Display while waiting for the API response -->
+        <p v-if="loading" class="text-center text-gray-500 py-4">
+          Loading clients...
+        </p>
+
+        <!-- Display when the API request fails -->
+        <p v-else-if="error" class="text-center text-red-600 py-4" role="alert">
+          {{ error.message }}
+        </p>
+
+        <!-- Display when no matching clients exist -->
+        <p v-else-if="clients.length === 0" class="text-center text-gray-500 py-4">
+          No clients found.
+        </p>
+
+        <!-- Display P3's reusable DataTable when clients are available -->
+        <DataTable
+          v-else
+          :rows="clients"
+          :columns="tableColumns"
+          @row-click="openClient"
+        />
+
       </div>
     </div>
   </main>
@@ -77,15 +100,31 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getClients, searchClients } from '../api/api'
-import { useToast } from 'vue-toastification'
+import { useApi } from '../composables/useApi'
 import DataTable from '../components/dataTable.vue'
 
 //Notifications
-const toast = useToast()
 const router = useRouter()
 
 //variable to store all clients and their information for the organization
-const clients = ref([])
+// manage client data, loading, and errors through useApi()
+const {
+  data: clients,
+  loading,
+  error,
+  execute
+} = useApi(
+  async (query = null) => {
+    if (query === null) {
+      return await getClients()
+    }
+
+    return await searchClients(query)
+  },
+  []
+)
+
+// Columns used by P3's reusable DataTable
 const tableColumns = [
   {
     key: 'name',
@@ -95,16 +134,17 @@ const tableColumns = [
   {
     key: 'phoneNumber',
     label: 'Phone number',
-    value: (client) => client.phoneNumber.primary,
+    value: (client) => client.phoneNumber?.primary ?? '',
   },
   {
     key: 'city',
     label: 'City',
-    value: (client) => client.address.city,
+    value: (client) => client.address?.city ?? '',
   },
 ]
+
 // Parameters for search to occur
-const searchBy = ref('')
+const searchBy = ref('Client Name')
 const firstName = ref('')
 const lastName = ref('')
 const phoneNumber = ref('')
@@ -115,52 +155,48 @@ onMounted(() => {
 
 // method called when component is mounted
 async function loadData() {
-  // Resets all the variables
-  searchBy.value = ''
+  // reset all search fields.
+  searchBy.value = 'Client Name'
   firstName.value = ''
   lastName.value = ''
   phoneNumber.value = ''
 
-  // get list of clients
-  try {
-    const response = await getClients()
-    clients.value = response
-  } catch (error) {
-    toast.error(error)
-  }
+  // load all clients through the shared composable.
+  await execute()
 }
 
 // method called when user searches for clients
 async function handleSubmitForm() {
-  // if user searched by client name
+  let query = null
+
+  // search clients by name
   if (searchBy.value === 'Client Name') {
-    if (firstName.value || lastName.value) {
-      try {
-        const query = {
-          searchBy: 'name',
-          firstName: firstName.value,
-          lastName: lastName.value,
-        }
-        const response = await searchClients(query)
-        clients.value = response
-      } catch (error) {
-        toast.error(error)
-      }
+    if (!firstName.value && !lastName.value) {
+      return
     }
-    // if user searches by client phone number
-  } else if (searchBy.value === 'Client Number') {
-    if (phoneNumber.value) {
-      try {
-        const query = {
-          searchBy: 'number',
-          phoneNumber: phoneNumber.value
-        }
-        const response = await searchClients(query)
-        clients.value = response
-      } catch (error) {
-        toast.error(error)
-      }
+
+    query = {
+      searchBy: 'name',
+      firstName: firstName.value,
+      lastName: lastName.value
     }
+  }
+
+  // search clients by phone number
+  else if (searchBy.value === 'Client Number') {
+    if (!phoneNumber.value) {
+      return
+    }
+
+    query = {
+      searchBy: 'number',
+      phoneNumber: phoneNumber.value
+    }
+  }
+
+  // execute the search using useApi()
+  if (query !== null) {
+    await execute(query)
   }
 }
 
