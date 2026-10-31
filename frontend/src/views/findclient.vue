@@ -66,30 +66,8 @@
         <h2 class="text-2xl font-bold">List of Clients</h2>
         <h3 class="italic">Click table row to view client details</h3>
       </div>
-      <!--Table showing list of Clients-->
       <div class="flex flex-col col-span-2">
-        <table class="min-w-full shadow-md rounded">
-          <thead class="bg-gray-50 text-xl">
-            <tr>
-              <th class="p-4 text-left">Name</th>
-              <th class="p-4 text-left">Phone number</th>
-              <th class="p-4 text-left">City</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-300">
-            <tr @click="goToClientDetails(client._id)" v-for="client in clients"
-              :key="client._id" class="cursor-pointer" :class="{ 'hoverRow': hoverId === client._id }"
-              @mouseenter="hoverId = client._id" @mouseleave="hoverId = null">
-              <td class="p-2 text-left">
-                {{ client.firstName + ' ' + client.lastName }}
-              </td>
-              <td class="p-2 text-left">
-                {{ client.phoneNumber.primary }}
-              </td>
-              <td class="p-2 text-left">{{ client.address.city }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <data-table :rows="clients" :columns="tableColumns" @row-click="openClient" />
       </div>
     </div>
   </main>
@@ -100,6 +78,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getClients, searchClients } from '../api/api'
 import { useToast } from 'vue-toastification'
+import DataTable from '../components/dataTable.vue'
 
 //Notifications
 const toast = useToast()
