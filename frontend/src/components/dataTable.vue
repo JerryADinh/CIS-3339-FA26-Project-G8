@@ -42,7 +42,7 @@
             {{ getCellValue(row, column) }}
           </td>
         </tr>
-        <tr v-if="rows.length === 0">
+        <tr v-if="tableRows.length === 0">
           <td class="p-4 text-center text-gray-500" :colspan="columns.length">
             No results found.
           </td>
@@ -52,7 +52,7 @@
 
     <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
       <p class="text-sm">
-        Showing {{ firstRow }}–{{ lastRow }} of {{ rows.length }}
+        Showing {{ firstRow }}–{{ lastRow }} of {{ tableRows.length }}
       </p>
       <div class="flex items-center gap-2">
         <label class="text-sm">
@@ -90,7 +90,7 @@ export default {
   emits: ['row-click'],
   props: {
     rows: {
-      type: Array,
+      type: [Array, null],
       default: () => [],
     },
     columns: {
@@ -112,20 +112,23 @@ export default {
     }
   },
   computed: {
+    tableRows() {
+      return Array.isArray(this.rows) ? this.rows : []
+    },
     pageCount() {
-      return Math.max(1, Math.ceil(this.rows.length / this.pageSize))
+      return Math.max(1, Math.ceil(this.tableRows.length / this.pageSize))
     },
     sortedRows() {
       if (!this.sortKey) {
-        return this.rows
+        return this.tableRows
       }
 
       const column = this.columns.find((item) => item.key === this.sortKey)
       if (!column) {
-        return this.rows
+        return this.tableRows
       }
 
-      return [...this.rows].sort((left, right) => {
+      return [...this.tableRows].sort((left, right) => {
         const leftValue = this.getSortValue(left, column)
         const rightValue = this.getSortValue(right, column)
 
@@ -151,14 +154,14 @@ export default {
       return this.sortedRows.slice(start, start + this.pageSize)
     },
     firstRow() {
-      return this.rows.length === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1
+      return this.tableRows.length === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1
     },
     lastRow() {
-      return Math.min(this.currentPage * this.pageSize, this.rows.length)
+      return Math.min(this.currentPage * this.pageSize, this.tableRows.length)
     },
   },
   watch: {
-    rows() {
+    tableRows() {
       this.currentPage = 1
     },
     pageSize() {

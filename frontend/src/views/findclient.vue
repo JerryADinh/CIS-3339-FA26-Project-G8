@@ -85,15 +85,29 @@ const toast = useToast()
 const router = useRouter()
 
 //variable to store all clients and their information for the organization
-const clients = ref(null)
+const clients = ref([])
+const tableColumns = [
+  {
+    key: 'name',
+    label: 'Name',
+    value: (client) => `${client.firstName} ${client.lastName}`,
+  },
+  {
+    key: 'phoneNumber',
+    label: 'Phone number',
+    value: (client) => client.phoneNumber.primary,
+  },
+  {
+    key: 'city',
+    label: 'City',
+    value: (client) => client.address.city,
+  },
+]
 // Parameters for search to occur
 const searchBy = ref('')
 const firstName = ref('')
 const lastName = ref('')
 const phoneNumber = ref('')
-// variable stores the ID of the row that the mouse is currently hovering over (to highlight the row red)
-const hoverId = ref(null)
-
 // when component is mounted, load the data -
 onMounted(() => {
   loadData()
@@ -151,7 +165,7 @@ async function handleSubmitForm() {
 }
 
 // navigate to the details page for the clicked client
-function goToClientDetails(id) {
-  router.push({ name: 'clientdetails', params: { id } })
+function openClient(client) {
+  router.push({ name: 'clientdetails', params: { id: client._id } })
 }
 </script>

@@ -76,14 +76,28 @@ const toast = useToast()
 const router = useRouter()
 
 //variable to hold all events for the organization
-const events = ref(null)
+const events = ref([])
+const tableColumns = [
+  {
+    key: 'name',
+    label: 'Event Name',
+  },
+  {
+    key: 'date',
+    label: 'Event Date',
+    value: (event) => formatDate(event.date),
+    sortValue: (event) => new Date(event.date).getTime(),
+  },
+  {
+    key: 'address',
+    label: 'Event Address',
+    value: (event) => event.address.line1,
+  },
+]
 // Parameters for search to occur
 const searchBy = ref(null)
 const name = ref(null)
 const eventDate = ref(null)
-// variable stores the ID of the row that the mouse is currently hovering over (to highlight the row red)
-const hoverId = ref(null)
-
 // when component is mounted, load the data
 onMounted(() => {
   loadData()
@@ -150,7 +164,7 @@ function formatDate(date) {
 }
 
 // navigate to the details page for the clicked event
-function goToEventDetails(id) {
-  router.push({ name: 'eventdetails', params: { id } })
+function openEvent(event) {
+  router.push({ name: 'eventdetails', params: { id: event._id } })
 }
 </script>
