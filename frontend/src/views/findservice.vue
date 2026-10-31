@@ -41,11 +41,11 @@
         <div></div>
         <div class="mt-5 grid-cols-2">
           <!--Clear Search button-->
-          <button class="mr-10 border border-red-700 bg-white text-red-700 rounded" @click="loadData" type="submit">
+          <button class="mr-10 border border-red-700 bg-white text-red-700 rounded" @click="loadData" type="button">
             Clear Search
           </button>
           <!--Search Service button-->
-          <button class="bg-red-700 text-white rounded" @click="handleSubmitForm" type="submit">
+          <button class="bg-red-700 text-white rounded" @click="handleSubmitForm" type="button">
             Search Service
           </button>
         </div>
@@ -61,7 +61,27 @@
         <h3 class="italic">Click table row to view service details</h3>
       </div>
       <div class="flex flex-col col-span-2">
-        <table class="min-w-full shadow-md rounded">
+
+        <!-- Show while the API request is running -->
+        <p v-if="loading" class="text-center text-gray-500 py-4">
+          Loading services...
+        </p>
+
+        <!-- Show when the API request fails -->
+        <p v-else-if="error" class="text-center text-red-600 py-4" role="alert">
+          {{ error.message }}
+        </p>
+
+        <!-- Show when no services are found -->
+        <p v-else-if="services.length === 0" class="text-center text-gray-500 py-4">
+          No services found.
+        </p>
+
+        <!-- Show the table when services are available -->
+        <table
+          v-else
+          class="min-w-full shadow-md rounded"
+        >
           <thead class="bg-gray-50 text-xl">
             <tr>
               <th class="p-4 text-left" style="width: 25%;">Service Name</th>
@@ -86,63 +106,73 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { getServices, searchServices } from '../api/api'
-import { useToast } from 'vue-toastification'
+import { useApi } from '../composables/useApi'
 
-const toast = useToast()
+// Manage service data, loading, and errors with useApi()
+const {
+  data: services,
+  loading,
+  error,
+  execute
+} = useApi(
+  async (query = null) => {
+    // No search query means load all services
+    if (query === null) {
+      return await getServices()
+    }
 
-// Migration: refs replace the state previously declared in data().
-const services = ref(null)
-const searchBy = ref(null)
-const name = ref(null)
-const description = ref(null)
+    // Otherwise, search services
+    return await searchServices(query)
+  },
+  []
+)
+
+const searchBy = ref('Service Name')
+const name = ref('')
+const description = ref('')
 const hoverId = ref(null)
 
 // Migration: top-level functions replace methods.
-// Refs use .value in JavaScript; the template unwraps them automatically.
+// Load all services and reset search fields
 async function loadData() {
-  searchBy.value = ''
+  searchBy.value = 'Service Name'
   name.value = ''
   description.value = ''
 
-  try {
-    services.value = await getServices()
-  } catch (error) {
-    toast.error(
-      typeof error === 'string'
-        ? error
-        : error?.message || 'Error loading services'
-    )
-  }
+  await execute()
 }
 
+// Search services by name or description
 async function handleSubmitForm() {
-  let query
+  let query = null
 
-  if (searchBy.value === 'Service Name' && name.value) {
+  // Search by service name
+  if (searchBy.value === 'Service Name') {
+    if (!name.value) {
+      return
+    }
+
     query = {
       searchBy: 'name',
       name: name.value
     }
-  } else if (
-    searchBy.value === 'Service Description' &&
-    description.value
-  ) {
+  }
+
+  // Search by service description
+  else if (searchBy.value === 'Service Description') {
+    if (!description.value) {
+      return
+    }
+
     query = {
       searchBy: 'description',
       description: description.value
     }
-  } else {
-    return
   }
 
-  try {
-    services.value = await searchServices(query)
-  } catch (error) {
-    toast.error(
-      typeof error === 'string'
-        ? error
-        : error?.message || 'Error searching services'
-    )
+  // Execute the search through useApi()
+  if (query !== null) {
+    await execute(query)
   }
 }
 
