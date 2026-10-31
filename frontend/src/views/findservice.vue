@@ -68,18 +68,33 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { getServices, searchServices } from '../api/api'
 import { useToast } from 'vue-toastification'
 import DataTable from '../components/dataTable.vue'
 
 const toast = useToast()
+const router = useRouter()
 
 // Migration: refs replace the state previously declared in data().
-const services = ref(null)
+const services = ref([])
+const tableColumns = [
+  {
+    key: 'name',
+    label: 'Service Name',
+    headerStyle: 'width: 25%',
+    cellClass: 'p-4 text-left',
+  },
+  {
+    key: 'description',
+    label: 'Service Description',
+    headerStyle: 'width: 75%',
+    cellClass: 'p-4 text-left text-sm',
+  },
+]
 const searchBy = ref(null)
 const name = ref(null)
 const description = ref(null)
-const hoverId = ref(null)
 
 // Migration: top-level functions replace methods.
 // Refs use .value in JavaScript; the template unwraps them automatically.
@@ -132,4 +147,8 @@ async function handleSubmitForm() {
 
 // Migration: onMounted() replaces the mounted lifecycle option.
 onMounted(loadData)
+
+function openService(service) {
+  router.push({ name: 'servicedetails', params: { id: service._id } })
+}
 </script>
