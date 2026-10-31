@@ -66,7 +66,6 @@
         <h2 class="text-2xl font-bold">List of Clients</h2>
         <h3 class="italic">Click table row to view client details</h3>
       </div>
-      <!--Table showing list of Clients-->
       <div class="flex flex-col col-span-2">
 
         <!-- Display while waiting for the API response -->
@@ -84,32 +83,14 @@
           No clients found.
         </p>
 
-        <!-- Display the table when clients are available -->
-        <table
+        <!-- Display P3's reusable DataTable when clients are available -->
+        <DataTable
           v-else
-          class="min-w-full shadow-md rounded"
-        >
-          <thead class="bg-gray-50 text-xl">
-            <tr>
-              <th class="p-4 text-left">Name</th>
-              <th class="p-4 text-left">Phone number</th>
-              <th class="p-4 text-left">City</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-300">
-            <tr @click="goToClientDetails(client._id)" v-for="client in clients"
-              :key="client._id" class="cursor-pointer" :class="{ 'hoverRow': hoverId === client._id }"
-              @mouseenter="hoverId = client._id" @mouseleave="hoverId = null">
-              <td class="p-2 text-left">
-                {{ client.firstName + ' ' + client.lastName }}
-              </td>
-              <td class="p-2 text-left">
-                {{ client.phoneNumber.primary }}
-              </td>
-              <td class="p-2 text-left">{{ client.address.city }}</td>
-            </tr>
-          </tbody>
-        </table>
+          :rows="clients"
+          :columns="tableColumns"
+          @row-click="openClient"
+        />
+
       </div>
     </div>
   </main>
@@ -120,11 +101,13 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getClients, searchClients } from '../api/api'
 import { useApi } from '../composables/useApi'
+import DataTable from '../components/dataTable.vue'
 
 //Notifications
 const router = useRouter()
 
 //variable to store all clients and their information for the organization
+// manage client data, loading, and errors through useApi()
 const {
   data: clients,
   loading,
@@ -132,25 +115,39 @@ const {
   execute
 } = useApi(
   async (query = null) => {
-    // No search query means load all clients.
     if (query === null) {
       return await getClients()
     }
 
-    // Otherwise, search using the provided query.
     return await searchClients(query)
   },
   []
 )
 
+// Columns used by P3's reusable DataTable
+const tableColumns = [
+  {
+    key: 'name',
+    label: 'Name',
+    value: (client) => `${client.firstName} ${client.lastName}`,
+  },
+  {
+    key: 'phoneNumber',
+    label: 'Phone number',
+    value: (client) => client.phoneNumber?.primary ?? '',
+  },
+  {
+    key: 'city',
+    label: 'City',
+    value: (client) => client.address?.city ?? '',
+  },
+]
+
 // Parameters for search to occur
-const searchBy = ref('')
+const searchBy = ref('Client Name')
 const firstName = ref('')
 const lastName = ref('')
 const phoneNumber = ref('')
-// variable stores the ID of the row that the mouse is currently hovering over (to highlight the row red)
-const hoverId = ref(null)
-
 // when component is mounted, load the data -
 onMounted(() => {
   loadData()
@@ -159,7 +156,7 @@ onMounted(() => {
 // method called when component is mounted
 async function loadData() {
   // reset all search fields.
-  searchBy.value = ''
+  searchBy.value = 'Client Name'
   firstName.value = ''
   lastName.value = ''
   phoneNumber.value = ''
@@ -204,7 +201,7 @@ async function handleSubmitForm() {
 }
 
 // navigate to the details page for the clicked client
-function goToClientDetails(id) {
-  router.push({ name: 'clientdetails', params: { id } })
+function openClient(client) {
+  router.push({ name: 'clientdetails', params: { id: client._id } })
 }
 </script>

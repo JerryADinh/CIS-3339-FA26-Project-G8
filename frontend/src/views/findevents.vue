@@ -53,7 +53,6 @@
     <hr class="mt-10 mb-10" />
     <!-- Display Found Data -->
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10">
-      <!--Table showing List of Events-->
       <div class="ml-10">
         <h2 class="text-2xl font-bold">List of Events</h2>
         <h3 class="italic">Click table row to view event details</h3>
@@ -75,29 +74,14 @@
           No events found.
         </p>
 
-        <!-- Show event table after successful loading -->
-        <table
+        <!-- Display P3's reusable DataTable -->
+        <DataTable
           v-else
-          class="min-w-full shadow-md rounded"
-        >
-          <thead class="bg-gray-50 text-xl">
-            <tr>
-              <th class="p-4 text-left">Event Name</th>
-              <th class="p-4 text-left">Event Date</th>
-              <th class="p-4 text-left">Event Address</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-300">
-            <tr @click="goToEventDetails(event._id)"
-              v-for="event in events" :key="event._id" class="cursor-pointer"
-              :class="{ 'hoverRow': hoverId === event._id }" @mouseenter="hoverId = event._id"
-              @mouseleave="hoverId = null">
-              <td class="p-2 text-left">{{ event.name }}</td>
-              <td class="p-2 text-left">{{ formatDate(event.date) }}</td>
-              <td class="p-2 text-left">{{ event.address.line1 }}</td>
-            </tr>
-          </tbody>
-        </table>
+          :rows="events"
+          :columns="tableColumns"
+          @row-click="openEvent"
+        />
+
       </div>
     </div>
   </main>
@@ -108,11 +92,12 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getEvents, searchEvents } from '../api/api'
 import { useApi } from '../composables/useApi'
+import DataTable from '../components/dataTable.vue'
 
 // router used to navigate to event details
 const router = useRouter()
 
-// manage event loading, searching, and errors through useApi()
+// Manage event loading, searching, and errors through useApi()
 const {
   data: events,
   loading,
@@ -130,12 +115,30 @@ const {
   },
   []
 )
-// Parameters for search to occur
+
+// Columns used by P3's reusable DataTable
+const tableColumns = [
+  {
+    key: 'name',
+    label: 'Event Name',
+  },
+  {
+    key: 'date',
+    label: 'Event Date',
+    value: (event) => formatDate(event.date),
+    sortValue: (event) => new Date(event.date).getTime(),
+  },
+  {
+    key: 'address',
+    label: 'Event Address',
+    value: (event) => event.address?.line1 ?? '',
+  },
+]
+
+// Parameters for event searches
 const searchBy = ref('Event Name')
 const name = ref('')
 const eventDate = ref('')
-// variable stores the ID of the row that the mouse is currently hovering over (to highlight the row red)
-const hoverId = ref(null)
 
 // when component is mounted, load the data
 onMounted(() => {
@@ -195,7 +198,7 @@ function formatDate(date) {
 }
 
 // navigate to the details page for the clicked event
-function goToEventDetails(id) {
-  router.push({ name: 'eventdetails', params: { id } })
+function openEvent(event) {
+  router.push({ name: 'eventdetails', params: { id: event._id } })
 }
 </script>

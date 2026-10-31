@@ -55,7 +55,6 @@
     <hr class="mt-10 mb-10" />
     <!-- Display Found Data -->
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10">
-      <!--List of Services table-->
       <div class="ml-10">
         <h2 class="text-2xl font-bold">List of Services</h2>
         <h3 class="italic">Click table row to view service details</h3>
@@ -77,27 +76,14 @@
           No services found.
         </p>
 
-        <!-- Show the table when services are available -->
-        <table
+        <!-- Display P3's reusable DataTable -->
+        <DataTable
           v-else
-          class="min-w-full shadow-md rounded"
-        >
-          <thead class="bg-gray-50 text-xl">
-            <tr>
-              <th class="p-4 text-left" style="width: 25%;">Service Name</th>
-              <th class="p-4 text-left" style="width: 75%;">Service Description</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-300">
-            <tr @click="$router.push({name: 'servicedetails', params: { id: service._id } })" 
-            v-for="service in services" :key="service._id" class="cursor-pointer"
-              :class="{ 'hoverRow': hoverId === service._id }" @mouseenter="hoverId = service._id"
-              @mouseleave="hoverId = null">
-              <td class="p-4 text-left">{{ service.name }}</td>
-              <td class="p-4 text-left text-sm">{{ service.description }}</td>
-            </tr>
-          </tbody>
-        </table>
+          :rows="services"
+          :columns="tableColumns"
+          @row-click="openService"
+        />
+
       </div>
     </div>
   </main>
@@ -105,10 +91,14 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { getServices, searchServices } from '../api/api'
 import { useApi } from '../composables/useApi'
+import DataTable from '../components/dataTable.vue'
 
-// Manage service data, loading, and errors with useApi()
+const router = useRouter()
+
+// Manage service data, loading, and errors through useApi()
 const {
   data: services,
   loading,
@@ -116,21 +106,37 @@ const {
   execute
 } = useApi(
   async (query = null) => {
-    // No search query means load all services
+    // No query means load all services
     if (query === null) {
       return await getServices()
     }
 
-    // Otherwise, search services
+    // Otherwise, search using the provided query
     return await searchServices(query)
   },
   []
 )
 
+// Columns used by P3's reusable DataTable
+const tableColumns = [
+  {
+    key: 'name',
+    label: 'Service Name',
+    headerStyle: 'width: 25%',
+    cellClass: 'p-4 text-left',
+  },
+  {
+    key: 'description',
+    label: 'Service Description',
+    headerStyle: 'width: 75%',
+    cellClass: 'p-4 text-left text-sm',
+  },
+]
+
+// Search parameters
 const searchBy = ref('Service Name')
 const name = ref('')
 const description = ref('')
-const hoverId = ref(null)
 
 // Migration: top-level functions replace methods.
 // Load all services and reset search fields
@@ -178,4 +184,8 @@ async function handleSubmitForm() {
 
 // Migration: onMounted() replaces the mounted lifecycle option.
 onMounted(loadData)
+
+function openService(service) {
+  router.push({ name: 'servicedetails', params: { id: service._id } })
+}
 </script>
