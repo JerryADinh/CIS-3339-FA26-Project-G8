@@ -73,103 +73,85 @@
   </main>
 </template>
 
-<script>
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { getClients, searchClients } from '../api/api'
 import { useToast } from 'vue-toastification'
 import DataTable from '../components/dataTable.vue'
 
 //Notifications
 const toast = useToast()
+const router = useRouter()
 
-export default {
-  components: {
-    DataTable,
-  },
-  data() {
-    return {
-      //variable to store all clients and their information for the organization
-      clients: [],
-      tableColumns: [
-        {
-          key: 'name',
-          label: 'Name',
-          value: (client) => `${client.firstName} ${client.lastName}`,
-        },
-        {
-          key: 'phoneNumber',
-          label: 'Phone number',
-          value: (client) => client.phoneNumber.primary,
-        },
-        {
-          key: 'city',
-          label: 'City',
-          value: (client) => client.address.city,
-        },
-      ],
-      // Parameters for search to occur
-      searchBy: '',
-      firstName: '',
-      lastName: '',
-      phoneNumber: '',
-    }
-  },
-  mounted() {
-    // when component is mounted, load the data -
-    this.loadData()
-  },
-  methods: {
-    openClient(client) {
-      this.$router.push({ name: 'clientdetails', params: { id: client._id } })
-    },
-    // method called when component is mounted
-    async loadData() {
-      // Resets all the variables
-      this.searchBy = ''
-      this.firstName = ''
-      this.lastName = ''
-      this.phoneNumber = ''
+//variable to store all clients and their information for the organization
+const clients = ref(null)
+// Parameters for search to occur
+const searchBy = ref('')
+const firstName = ref('')
+const lastName = ref('')
+const phoneNumber = ref('')
+// variable stores the ID of the row that the mouse is currently hovering over (to highlight the row red)
+const hoverId = ref(null)
 
-      // get list of clients
+// when component is mounted, load the data -
+onMounted(() => {
+  loadData()
+})
+
+// method called when component is mounted
+async function loadData() {
+  // Resets all the variables
+  searchBy.value = ''
+  firstName.value = ''
+  lastName.value = ''
+  phoneNumber.value = ''
+
+  // get list of clients
+  try {
+    const response = await getClients()
+    clients.value = response
+  } catch (error) {
+    toast.error(error)
+  }
+}
+
+// method called when user searches for clients
+async function handleSubmitForm() {
+  // if user searched by client name
+  if (searchBy.value === 'Client Name') {
+    if (firstName.value || lastName.value) {
       try {
-        const response = await getClients();
-        this.clients = response;
+        const query = {
+          searchBy: 'name',
+          firstName: firstName.value,
+          lastName: lastName.value,
+        }
+        const response = await searchClients(query)
+        clients.value = response
       } catch (error) {
         toast.error(error)
       }
-    },
-    // method called when user searches for clients
-    async handleSubmitForm() {
-      // if user searched by client name
-      if (this.searchBy === 'Client Name') {
-        if (this.firstName || this.lastName) {
-          try {
-            const query = {
-              searchBy: 'name',
-              firstName: this.firstName,
-              lastName: this.lastName,
-            }
-            const response = await searchClients(query)
-            this.clients = response;
-          } catch (error) {
-            toast.error(error)
-          }
+    }
+    // if user searches by client phone number
+  } else if (searchBy.value === 'Client Number') {
+    if (phoneNumber.value) {
+      try {
+        const query = {
+          searchBy: 'number',
+          phoneNumber: phoneNumber.value
         }
-        // if user searches by client phone number
-      } else if (this.searchBy === 'Client Number') {
-        if (this.phoneNumber) {
-          try {
-            const query = {
-              searchBy: 'number',
-              phoneNumber: this.phoneNumber
-            }
-            const response = await searchClients(query)
-            this.clients = response;
-          } catch (error) {
-            toast.error(error)
-          }
-        }
+        const response = await searchClients(query)
+        clients.value = response
+      } catch (error) {
+        toast.error(error)
       }
-    },
-  },
+    }
+  }
+}
+
+// navigate to the details page for the clicked client
+function goToClientDetails(id) {
+  router.push({ name: 'clientdetails', params: { id } })
 }
 </script>

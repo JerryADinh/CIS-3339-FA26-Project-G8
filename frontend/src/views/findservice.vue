@@ -66,98 +66,70 @@
   </main>
 </template>
 
-<script>
+<script setup>
+import { ref, onMounted } from 'vue'
 import { getServices, searchServices } from '../api/api'
 import { useToast } from 'vue-toastification'
 import DataTable from '../components/dataTable.vue'
 
-//Notifications
 const toast = useToast()
 
-export default {
-  components: {
-    DataTable,
-  },
-  data() {
-    return {
-      //variable to hold the services for the organization
-      services: [],
-      tableColumns: [
-        {
-          key: 'name',
-          label: 'Service Name',
-          headerStyle: 'width: 25%',
-          cellClass: 'p-4 text-left',
-        },
-        {
-          key: 'description',
-          label: 'Service Description',
-          headerStyle: 'width: 75%',
-          cellClass: 'p-4 text-left text-sm',
-        },
-      ],
-      // Parameters for search to occur
-      searchBy: null,
-      name: null,
-      description: null,
-    }
-  },
-  mounted() {
-    // when component is mounted, load the data
-    this.loadData();
-  },
-  methods: {
-    openService(service) {
-      this.$router.push({ name: 'servicedetails', params: { id: service._id } })
-    },
-    // method called when component is mounted
-    async loadData() {
-      // Resets all the variables
-      this.searchBy = ''
-      this.name = ''
-      this.description = ''
+// Migration: refs replace the state previously declared in data().
+const services = ref(null)
+const searchBy = ref(null)
+const name = ref(null)
+const description = ref(null)
+const hoverId = ref(null)
 
-      // get list of services
-      try {
-        const response = await getServices();
-        this.services = response;
-      } catch (error) {
-        toast.error(error)
-      }
-    },
+// Migration: top-level functions replace methods.
+// Refs use .value in JavaScript; the template unwraps them automatically.
+async function loadData() {
+  searchBy.value = ''
+  name.value = ''
+  description.value = ''
 
-    // method called when user searches for a service
-    async handleSubmitForm() {
-      // if user searches by service name
-      if (this.searchBy === 'Service Name') {
-        if (this.name) {
-          try {
-            const query = {
-              searchBy: 'name',
-              name: this.name
-            }
-            const response = await searchServices(query)
-            this.services = response;
-          } catch (error) {
-            toast.error(error)
-          }
-        }
-        // if user searches by service description
-      } else if (this.searchBy === 'Service Description') {
-        if (this.description) {
-          try {
-            const query = {
-              searchBy: 'description',
-              description: this.description
-            }
-            const response = await searchServices(query)
-            this.services = response;
-          } catch (error) {
-            toast.error('Error searching services:', error)
-          }
-        }
-      }
-    },
-  },
+  try {
+    services.value = await getServices()
+  } catch (error) {
+    toast.error(
+      typeof error === 'string'
+        ? error
+        : error?.message || 'Error loading services'
+    )
+  }
 }
+
+async function handleSubmitForm() {
+  let query
+
+  if (searchBy.value === 'Service Name' && name.value) {
+    query = {
+      searchBy: 'name',
+      name: name.value
+    }
+  } else if (
+    searchBy.value === 'Service Description' &&
+    description.value
+  ) {
+    query = {
+      searchBy: 'description',
+      description: description.value
+    }
+  } else {
+    return
+  }
+
+  try {
+    services.value = await searchServices(query)
+  } catch (error) {
+    toast.error(
+      typeof error === 'string'
+        ? error
+        : error?.message || 'Error searching services'
+    )
+  }
+}
+
+// Migration: onMounted() replaces the mounted lifecycle option.
+onMounted(loadData)
 </script>

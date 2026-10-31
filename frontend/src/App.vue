@@ -89,43 +89,34 @@
   </main>
 </template>
 
-<script>
+<script setup>
+import { ref } from 'vue'
 import { useLoggedInUserStore } from './store/loggedInUser'
 import { getOrgName } from './api/api'
 import { useToast } from 'vue-toastification'
 
 //Notifications
 const toast = useToast()
+// loggedIn store
+const user = useLoggedInUserStore()
 
-export default {
-  setup() {
-    const user = useLoggedInUserStore();
-    return { user };
-  },
-  data() {
-    return {
-      orgName: "Dataplatform",
-    };
-  },
-  async created() {
-    try {
-      this.orgName = await getOrgName();
-    } catch {
-      throw (error)
-    }
-  },
-  methods: {
-    logout() {
-      try {
-        this.$store.dispatch('clearSessionData');
-        this.$router.push('/')
-      } catch (error) {
-        toast.error('logout error', error)
-      }
-    },
+// organization name shown in the header (default is shown until the API responds)
+const orgName = ref("Dataplatform")
+
+// load the organization name. Called directly during setup, which is the
+// equivalent of the old created() hook (top-level await is avoided on purpose:
+// it would turn App into an async component that needs <Suspense>)
+async function loadOrgName() {
+  try {
+    orgName.value = await getOrgName()
+  } catch (error) {
+    toast.error('Unable to load organization name')
+    console.error(error)
   }
 }
+loadOrgName()
 </script>
+
 
 <style scoped>
 #_container {
