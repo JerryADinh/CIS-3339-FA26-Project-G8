@@ -18,11 +18,8 @@ export function useApi(apiCall, initialData = null) {
             return response;
         } catch (err) {
             // Store the error so components can display it
-            error.value = err instanceof Error
-                ? err
-                : new Error(String(err));
-
-            // Prevent unhandled promise rejection
+            error.value = err instanceof Error ? err.message : String(err);
+                        // Prevent unhandled promise rejection
             return null;
         } finally {
             loading.value = false;

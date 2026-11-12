@@ -404,12 +404,15 @@ async function submitUpdateClient() {
 
 // method called when user attempts to delete client
 async function submitDeleteClient() {
+  const isConfirmed = window.confirm("Are you sure you want to delete this client?");
+  if (!isConfirmed) return;
+
   try {
     const response = await deleteClientbyId(route.params.id)
     toast.success(response)
     router.push('/findclient')
   } catch (error) {
-    toast.error(error)
+    toast.error(error.message) // ensure error message is printed correctly
   }
 }
 </script>

@@ -304,11 +304,15 @@ async function submitDeleteEvent() {
       toast.info('Event can not be deleted since it has attendees.')
       return
     }
+
+    const isConfirmed = window.confirm("Are you sure you want to delete this event?");
+    if (!isConfirmed) return;
+
     const response = await deleteEvent(route.params.id)
     toast.success(response)
     router.push('/findevents')
   } catch (error) {
-    toast.error(error)
+    toast.error(error.message)
   }
 }
 </script>

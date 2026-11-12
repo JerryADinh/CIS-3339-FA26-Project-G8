@@ -29,7 +29,7 @@
           :key="row[rowKey]"
           class="cursor-pointer"
           :class="{ hoverRow: hoverKey === row[rowKey] }"
-          @click="$emit('row-click', row)"
+          @click="emit('row-click', row)"
           @mouseenter="hoverKey = row[rowKey]"
           @mouseleave="hoverKey = null"
         >
@@ -85,110 +85,119 @@
   </div>
 </template>
 
-<script>
-export default {
-  emits: ['row-click'],
-  props: {
-    rows: {
-      type: [Array, null],
-      default: () => [],
-    },
-    columns: {
-      type: Array,
-      required: true,
-    },
-    rowKey: {
-      type: String,
-      default: '_id',
-    },
-  },
-  data() {
-    return {
-      currentPage: 1,
-      pageSize: 10,
-      sortKey: null,
-      sortDirection: 1,
-      hoverKey: null,
-    }
-  },
-  computed: {
-    tableRows() {
-      return Array.isArray(this.rows) ? this.rows : []
-    },
-    pageCount() {
-      return Math.max(1, Math.ceil(this.tableRows.length / this.pageSize))
-    },
-    sortedRows() {
-      if (!this.sortKey) {
-        return this.tableRows
-      }
+<script setup>
+import { ref, computed, watch } from 'vue'
 
-      const column = this.columns.find((item) => item.key === this.sortKey)
-      if (!column) {
-        return this.tableRows
-      }
-
-      return [...this.tableRows].sort((left, right) => {
-        const leftValue = this.getSortValue(left, column)
-        const rightValue = this.getSortValue(right, column)
-
-        if (leftValue == null || rightValue == null) {
-          if (leftValue == null && rightValue == null) return 0
-          return leftValue == null ? 1 : -1
-        }
-
-        let comparison
-        if (typeof leftValue === 'number' && typeof rightValue === 'number') {
-          comparison = leftValue - rightValue
-        } else {
-          comparison = String(leftValue).localeCompare(String(rightValue), undefined, {
-            numeric: true,
-            sensitivity: 'base',
-          })
-        }
-        return comparison * this.sortDirection
-      })
-    },
-    paginatedRows() {
-      const start = (this.currentPage - 1) * this.pageSize
-      return this.sortedRows.slice(start, start + this.pageSize)
-    },
-    firstRow() {
-      return this.tableRows.length === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1
-    },
-    lastRow() {
-      return Math.min(this.currentPage * this.pageSize, this.tableRows.length)
-    },
+const props = defineProps({
+  rows: {
+    type: [Array, null],
+    default: () => []
   },
-  watch: {
-    tableRows() {
-      this.currentPage = 1
-    },
-    pageSize() {
-      this.currentPage = 1
-    },
-    pageCount(pageCount) {
-      if (this.currentPage > pageCount) {
-        this.currentPage = pageCount
-      }
-    },
+  columns: {
+    type: Array,
+    required: true
   },
-  methods: {
-    getCellValue(row, column) {
-      return column.value ? column.value(row) : row[column.key]
-    },
-    getSortValue(row, column) {
-      return column.sortValue ? column.sortValue(row) : this.getCellValue(row, column)
-    },
-    sortBy(column) {
-      if (this.sortKey === column.key) {
-        this.sortDirection *= -1
-      } else {
-        this.sortKey = column.key
-        this.sortDirection = 1
-      }
-      this.currentPage = 1
-    },
-  },
+  rowKey: {
+    type: String,
+    default: '_id'
+  }
+})
+
+const emit = defineEmits(['row-click'])
+
+const currentPage = ref(1)
+const pageSize = ref(10)
+const sortKey = ref(null)
+const sortDirection = ref(1)
+const hoverKey = ref(null)
+
+const tableRows = computed(() => {
+  return Array.isArray(props.rows) ? props.rows : []
+})
+
+const pageCount = computed(() => {
+  return Math.max(1, Math.ceil(tableRows.value.length / pageSize.value))
+})
+
+function getCellValue(row, column) {
+  const renderFn = column.render || column.value
+  return renderFn ? renderFn(row) : row[column.key]
 }
+
+function getSortValue(row, column) {
+  return column.sortValue ? column.sortValue(row) : getCellValue(row, column)
+}
+
+// 3-state sort cycle: ascending (1) -> descending (-1) -> unsorted (null)
+function sortBy(column) {
+  if (sortKey.value !== column.key) {
+    sortKey.value = column.key
+    sortDirection.value = 1
+  } else if (sortDirection.value === 1) {
+    sortDirection.value = -1
+  } else {
+    sortKey.value = null
+    sortDirection.value = 1
+  }
+  currentPage.value = 1
+}
+
+const sortedRows = computed(() => {
+  if (!sortKey.value) {
+    return tableRows.value
+  }
+
+  const column = props.columns.find((item) => item.key === sortKey.value)
+  if (!column) {
+    return tableRows.value
+  }
+
+  return [...tableRows.value].sort((left, right) => {
+    const leftValue = getSortValue(left, column)
+    const rightValue = getSortValue(right, column)
+
+    if (leftValue == null || rightValue == null) {
+      if (leftValue == null && rightValue == null) return 0
+      return leftValue == null ? 1 : -1
+    }
+
+    let comparison
+    if (typeof leftValue === 'number' && typeof rightValue === 'number') {
+      comparison = leftValue - rightValue
+    } else {
+      comparison = String(leftValue).localeCompare(String(rightValue), undefined, {
+        numeric: true,
+        sensitivity: 'base'
+      })
+    }
+    return comparison * sortDirection.value
+  })
+})
+
+const paginatedRows = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return sortedRows.value.slice(start, start + pageSize.value)
+})
+
+const firstRow = computed(() => {
+  return tableRows.value.length === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1
+})
+
+const lastRow = computed(() => {
+  return Math.min(currentPage.value * pageSize.value, tableRows.value.length)
+})
+
+watch(tableRows, () => {
+  currentPage.value = 1
+})
+
+watch(pageSize, () => {
+  currentPage.value = 1
+})
+
+watch(pageCount, (newPageCount) => {
+  if (currentPage.value > newPageCount) {
+    currentPage.value = newPageCount
+  }
+})
 </script>

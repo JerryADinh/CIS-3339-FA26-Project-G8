@@ -209,11 +209,15 @@ async function submitDeleteService() {
       toast.info('Service can not be deleted since it is being used by events.')
       return
     }
+
+    const isConfirmed = window.confirm("Are you sure you want to delete this service?");
+    if (!isConfirmed) return;
+
     const response = await deleteService(route.params.id)
     toast.success(response)
     router.push('/findservice')
   } catch (error) {
-    toast.error(error)
+    toast.error(error.message)
   }
 }
 </script>

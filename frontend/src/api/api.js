@@ -1,6 +1,8 @@
 // This file contains all API calls to the API endpoints
 // import axios to make API calls
 import axios from "axios";
+import { useLoggedInUserStore } from "../store/loggedInUser";
+import router from "../router";
 
 // Create HTTP client with the base URL, and specify that the data sent in the request body is JSON
 const apiClient = axios.create({
@@ -42,24 +44,31 @@ apiClient.interceptors.response.use(
       );
     }
 
-// Handle expired or unauthorized sessions.
-if (status === 401) {
-  const isLoginRequest =
-    error.config?.url?.includes("/users/login");
+    // Handle expired or unauthorized sessions.
+    if (status === 401) {
+      const isLoginRequest =
+        error.config?.url?.includes("/users/login");
 
-  if (!isLoginRequest) {
-    logoutUser();
-    window.location.replace("/login");
-  }
+      if (!isLoginRequest) {
+        logoutUser();
+        // Clear Pinia state and redirect via Vue Router (Task F2)
+        const userStore = useLoggedInUserStore();
+        userStore.$patch({
+          name: "",
+          role: "",
+          isLoggedIn: false,
+        });
+        router.push("/login");
+      }
 
-  return Promise.reject(
-    new Error(
-      isLoginRequest
-        ? "Invalid username or password."
-        : "Your session has expired. Please log in again."
-    )
-  );
-}
+      return Promise.reject(
+        new Error(
+          isLoginRequest
+            ? "Invalid username or password."
+            : "Your session has expired. Please log in again."
+        )
+      );
+    }
 
     // Extract the message from the backend response.
     const responseData = error.response.data;

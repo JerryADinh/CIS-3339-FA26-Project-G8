@@ -65,9 +65,15 @@
         </p>
 
         <!-- Show when the API request fails -->
-        <p v-else-if="error" class="text-center text-red-600 py-4" role="alert">
-          {{ error.message }}
-        </p>
+        <div v-else-if="error" class="text-center py-4" role="alert">
+          <p class="text-red-600 mb-4">{{ error }}</p>
+          <button 
+            @click="execute()" 
+            class="bg-red-700 text-white rounded px-4 py-2"
+          >
+            Retry
+          </button>
+        </div>
 
         <!-- Show when no events match the search -->
         <p v-else-if="events.length === 0" class="text-center text-gray-500 py-4">
